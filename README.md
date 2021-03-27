@@ -5,6 +5,7 @@ Wraps PE Files (PIE required) into a shellcode loader via donut. This mainly eva
 ## Setup
 
 ```
+go get golang.org/x/sys/windows
 pip3 install donut-shellcode
 sudo apt-get install upx
 ```
